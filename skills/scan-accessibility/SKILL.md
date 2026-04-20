@@ -16,8 +16,9 @@ metadata:
 ## Prerequisites
 
 - navable MCP server must be configured (see Step 0)
-- Playwright Chromium browser engine installed (`npx playwright install chromium`). If missing, the
-  scan will return a clear error with install instructions.
+- Playwright Chromium browser engine — installed automatically when `@navable/mcp` is installed.
+  If the auto-download was skipped (restricted network or CI), run `npx playwright install chromium`
+  manually. A missing browser will return a clear error with install instructions.
 - Target URL accessible on localhost (any port). External hosts require a `.navable.json` config
   with `allowedHosts`.
 
