@@ -1,8 +1,12 @@
 # @navable/skills
 
+[navable.io](https://navable.io/) |
+[MCP Server](https://github.com/web-DnA/navable-web-accessibility-mcp) |
+[npm](https://www.npmjs.com/package/@navable/mcp)
+
 Agent skills that teach AI coding agents how to scan, fix, audit, and review WCAG 2.1 Level A + AA
 accessibility issues using the
-[navable MCP server](https://github.com/navable/navable-web-accessibility-mcp).
+[navable MCP server](https://github.com/web-DnA/navable-web-accessibility-mcp).
 
 ## Skills
 
@@ -18,7 +22,12 @@ accessibility issues using the
 ### 1. Install the navable MCP server
 
 The skills require the navable MCP server. See the
-[MCP repo](https://github.com/navable/navable-web-accessibility-mcp) for setup instructions.
+[MCP repo](https://github.com/web-DnA/navable-web-accessibility-mcp) for setup instructions, or
+install directly from npm:
+
+```bash
+npm install @navable/mcp
+```
 
 ### 2. Copy skills to your project
 
@@ -62,7 +71,7 @@ skills/
 
 ## Requirements
 
-- [navable MCP server](https://github.com/navable/navable-web-accessibility-mcp) configured in your
+- [navable MCP server](https://github.com/web-DnA/navable-web-accessibility-mcp) configured in your
   IDE
 - Playwright Chromium (`npx playwright install chromium`) for scan/audit skills
 - A running dev server for URL-based scanning
