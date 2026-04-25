@@ -1,12 +1,11 @@
 # @navable/skills
 
-[navable.io](https://navable.io/) |
-[MCP Server](https://github.com/web-DnA/navable-web-accessibility-mcp) |
-[npm](https://www.npmjs.com/package/@navable/mcp)
-
 Agent skills that teach AI coding agents how to scan, fix, audit, and review WCAG 2.1 Level A + AA
 accessibility issues using the
-[navable MCP server](https://github.com/web-DnA/navable-web-accessibility-mcp).
+[navable MCP server](https://github.com/web-DnA/navable-web-accessibility-mcp)
+([npm](https://www.npmjs.com/package/@navable/mcp)).
+
+Learn more about what we're building at [navable.io](https://navable.io/).
 
 ## Skills
 
@@ -75,6 +74,15 @@ skills/
   IDE
 - Playwright Chromium (`npx playwright install chromium`) for scan/audit skills
 - A running dev server for URL-based scanning
+
+## Contributing
+
+We'd love your feedback, ideas, and contributions! If you run into issues, have suggestions, or want
+to add new fix guides — feel free to
+[open an issue](https://github.com/web-DnA/navable-web-accessibility-skills/issues) or submit a pull
+request. Every bit helps make the web more accessible for everyone.
+
+Check out [navable.io](https://navable.io/) to see what else we're working on.
 
 ## License
 
