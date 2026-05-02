@@ -1,9 +1,10 @@
 ---
 name: audit-page-structure
 description: >
-  Audits a page's structural accessibility: landmark regions, heading hierarchy, navigation
-  patterns, skip links, and document metadata. Use when the user asks about page structure,
-  landmarks, heading order, or navigation accessibility.
+  Audits page structure for accessibility: landmark regions, heading hierarchy, navigation
+  patterns, skip links, and document metadata. Use ONLY when the user explicitly asks about
+  landmarks, heading order, page outline, or navigation structure — NOT for general accessibility
+  scans or fix workflows (use scan-accessibility for those).
 license: MIT
 compatibility:
   Requires the navable MCP server (npx -y @navable/mcp) and Playwright Chromium for URL scanning.
@@ -24,7 +25,10 @@ metadata:
 
 ### With Browser (URL provided)
 
-1. Call `run_accessibility_scan` with the URL
+1. Call `run_accessibility_scan` with the URL. For an audit (one-shot, high-confidence review),
+   prefer dual-engine: `run_accessibility_scan({ url, engines: ["axe", "htmlcs"] })`. The extra
+   ~2–4 s is acceptable for audits and surfaces structural issues axe alone can miss
+   (e.g. deprecated `align` attributes, missing iframe titles).
 2. Filter results for structural rules:
    - `region`, `landmark-one-main`, `landmark-no-duplicate-main`, `landmark-banner-is-top-level`,
      `landmark-contentinfo-is-top-level`, `landmark-main-is-top-level`, `landmark-unique`

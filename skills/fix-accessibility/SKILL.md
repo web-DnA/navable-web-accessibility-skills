@@ -36,7 +36,35 @@ metadata:
 
 ### Step 3: Fix Each Item
 
-For each pending item:
+**Before starting:** Group plan items by DOM element. Multiple items often target the same element
+(separate axe nodes in a multi-node violation, or cross-engine flags under different WCAG criteria).
+Fixing one element once avoids regressions and cuts file reads/writes.
+
+Two items belong in the same bucket when both:
+
+1. **Selectors match** — identical, **or** one selector is a tail of the other (the longer one has
+   ` > ` immediately before where the shorter one starts; the shorter side need not contain ` > `
+   itself, so `img:nth-child(1)` matches `… > img:nth-child(1)`), **or** they match after
+   stripping `[attribute]` filters (e.g. `button[type="button"]` matches `button`). When you fall
+   back to the attribute-stripped path, require **exact HTML equality** — distinct elements like
+   `input[type="checkbox"]` and `input[type="radio"]` collapse to the same stripped selector, so
+   any HTML divergence means they are different elements.
+2. **`affectedNodes[0].html` snippets match** — normalize whitespace (collapse runs of spaces,
+   trim) and lowercase, then compare the first ~200 characters. The 200-char window is wide enough
+   to catch divergence in child content (e.g. `<option>` text inside two different `<select>`).
+
+> If selectors look similar but HTML differs, treat as different elements. Two `<select>` in two
+> forms can share the suffix `form > div:nth-child(4) > select` — their `<option>` content
+> disambiguates them, but only if you compare enough of the HTML.
+>
+> **`:nth-child` index drift.** axe and HTMLCS occasionally disagree on `:nth-child` indices when
+> there are sibling text nodes or comments. If two findings are clearly the same element but the
+> indices differ by one, trust the HTML snippet over the selector and bucket them together.
+
+For each bucket, design **one minimal edit** addressing every fix in the bucket, then call
+`update_fix_status` with **all** resolved fix IDs in one call.
+
+For each pending item (or bucket):
 
 1. **Set status to `in_progress`** in `.navable-plan.json` and save
 2. **Identify the violation category** from `item.ruleId`

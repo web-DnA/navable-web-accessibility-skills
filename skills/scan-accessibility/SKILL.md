@@ -2,9 +2,9 @@
 name: scan-accessibility
 description: >
   Scans a URL for WCAG 2.1 AA accessibility violations using Playwright and axe-core via the navable
-  MCP server. Generates a prioritized fix plan with before/after code patterns and EN 301 549
-  mapping. Use when the user asks to check, scan, audit, or test accessibility of a page, URL, or
-  component.
+  MCP server. Generates a prioritized fix plan with before/after code patterns and EN 301 549 mapping.
+  Use this as the default skill for accessibility work: when the user asks to check, scan, or fix
+  accessibility of a page or URL. (For structure-only audits, see audit-page-structure.)
 license: MIT
 compatibility: Requires the navable MCP server (npx -y @navable/mcp) and Playwright Chromium.
 metadata:
@@ -98,6 +98,10 @@ Optional parameters:
 - `tags` — axe-core rule tags to run (default: `wcag2a, wcag21a, wcag2aa, wcag21aa`)
 - `include` — CSS selectors to scope the scan to specific regions
 - `exclude` — CSS selectors to skip (e.g. third-party widgets)
+- `engines` — Engines to run. Default: `["axe"]`. Pass `["axe", "htmlcs"]` for crossover
+  validation (Pa11y/HTMLCS as a second engine). Adds ~2–4 s wall-clock per scan and grows result
+  size by ~30–70%. Use only when the user explicitly asks for higher confidence, a compliance
+  audit, or BFSG/EN 301 549 sign-off. For iterative fix loops, keep the default `["axe"]`.
 
 The result includes a `scanId` field — save it for Step 3.
 
@@ -152,7 +156,65 @@ Only proceed to Step 4 if the user confirms. If they decline or ask to review fi
 
 Work through `plan.items` where `status === "pending"`:
 
-For each item:
+#### Group fixes by DOM element first
+
+Multiple plan items often target the **same element** — either as separate axe nodes in a
+multi-node violation, or as cross-engine flags under different WCAG criteria. Editing the same
+element once for all its findings avoids regressions (a later fix undoing an earlier one) and cuts
+file reads/writes.
+
+**Two items belong in the same element bucket when both:**
+
+1. **Selectors match** — identical, **or** one selector is a tail of the other (the longer one
+   has ` > ` immediately before where the shorter one starts; the shorter side need not contain
+   ` > ` itself, so `img:nth-child(1)` matches `… > img:nth-child(1)`), **or** they match after
+   stripping `[attribute]` filters (e.g. `button[type="button"]` matches `button`). When you fall
+   back to the attribute-stripped path, require **exact HTML equality** — distinct elements like
+   `input[type="checkbox"]` and `input[type="radio"]` collapse to the same stripped selector, so
+   any HTML divergence means they are different elements.
+2. **`affectedNodes[0].html` snippets match** — normalize whitespace (collapse runs of spaces,
+   trim) and lowercase, then compare the first ~200 characters. The 200-char window is wide enough
+   to catch divergence in child content (e.g. `<option>` text inside two different `<select>`
+   elements that share their opening tag).
+
+> If selectors look similar but the HTML differs, treat them as different elements. Two `<select>`
+> elements in two different forms can share the suffix `form > div:nth-child(4) > select` but are
+> distinct — their `<option>` content disambiguates them, but only if you compare enough of the
+> HTML.
+>
+> **`:nth-child` index drift.** axe and HTMLCS occasionally disagree on `:nth-child` indices when
+> there are sibling text nodes or comments. If two findings are clearly the same element but the
+> indices differ by one, trust the HTML snippet over the selector and bucket them together.
+
+**Process per bucket:**
+
+1. Read all fix items in the bucket and list every WCAG SC they cover.
+2. Design **one minimal HTML edit** that addresses every fix in the bucket.
+3. Apply the edit.
+4. Call `update_fix_status` with **all** resolved fix IDs in one call.
+
+**Example.** A `<select>` flagged by 5 fixes (SC 3.3.2 missing label, SC 4.1.2 no name, SC 1.3.1
+no programmatic label, SC 4.1.2 no value, SC 1.3.1 no `<optgroup>`) is one edit:
+
+```diff
+- <select>
+-   <option>Choose your team size</option>
+-   <option>1-10</option>
+-   <option>11-50</option>
+- </select>
++ <label for="team-size">Team size</label>
++ <select id="team-size" name="teamSize">
++   <option value="" disabled selected>Choose your team size</option>
++   <optgroup label="Sizes">
++     <option value="1-10">1–10</option>
++     <option value="11-50">11–50</option>
++   </optgroup>
++ </select>
+```
+
+Then: `update_fix_status({ fixIds: ["fix-5", "fix-16", "fix-17", "fix-31", "fix-32"], status: "done" })`.
+
+#### For each bucket (or single-item bucket)
 
 1. **Identify the violation category** from the `ruleId` and load the relevant fix guide
 2. **Locate the source file** — use `item.affectedNodes[].selector` and `item.affectedNodes[].html`
@@ -259,5 +321,10 @@ Load the relevant guide when fixing a specific violation type:
   formatting and enables resumability if the session is interrupted.
 - **`incomplete` items in the scan** are issues axe cannot determine automatically. They appear in
   `plan.manualReview`. Mention them to the user but do not auto-fix them.
+- **Dual-engine results** (when `engines: ["axe", "htmlcs"]`): violations include a `source` field
+  (`"axe"` or `"htmlcs"`). An entry with `alsoFlaggedBy: ["htmlcs"]` is double-confirmed by both
+  engines — treat as high confidence and prioritize. HTMLCS-only entries (`source: "htmlcs"`) come
+  with a `helpUrl` (WCAG _Understanding_ doc) and `developerNote` (one-sentence guidance) to use
+  in place of fix-pattern resources, since HTMLCS rule IDs don't match `navable://docs/fix-patterns/*`.
 - **Framework detection:** Check `package.json` for react, vue, svelte, angular to choose the right
   fix patterns from the guides.

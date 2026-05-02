@@ -16,6 +16,46 @@ Learn more about what we're building at [navable.io](https://navable.io/).
 | `review-component`     | Review a component's source code for accessibility issues (no browser) |
 | `audit-page-structure` | Audit landmarks, heading hierarchy, navigation, and document metadata  |
 
+## Scan engines
+
+**By default, only axe-core runs.** A plain "scan this URL" request uses axe-core only — fast, low
+token cost, suitable for iterative fix loops.
+
+Pa11y/HTMLCS is a second engine that can be enabled for higher-confidence scans. Use it when:
+
+- Running a one-shot compliance audit (BFSG, EN 301 549 sign-off)
+- The user explicitly asks for a thorough or dual-engine scan
+
+The `audit-page-structure` skill enables both engines automatically. All other skills use axe-only
+by default.
+
+### How to enable Pa11y for all scans
+
+Add to `.navable.json` in your project root:
+
+```json
+{
+  "engines": ["axe", "htmlcs"]
+}
+```
+
+Or pass it per scan:
+
+```
+run_accessibility_scan({ url: "http://localhost:3000", engines: ["axe", "htmlcs"] })
+```
+
+When both engines run, crossover findings are deduped server-side — the same bug found by both
+engines appears once, tagged `alsoFlaggedBy: ["htmlcs"]`. HTMLCS-only findings include a `helpUrl`
+and `developerNote` so agents know how to act on them. Adds ~2–4 s wall-clock per scan.
+
+> **Heads up:** the same DOM element is often flagged by both engines under different WCAG criteria
+> (e.g. a `<select>` without a label: SC 3.3.2 _and_ SC 4.1.2 _and_ SC 1.3.1). These are real,
+> separate audit findings and are intentionally kept distinct — collapsing them would lose
+> compliance traceability. The `scan-accessibility` and `fix-accessibility` skills include guidance
+> to **group plan items by DOM element** before editing, so one HTML change resolves all related fix
+> IDs in a single pass instead of re-editing the same element repeatedly.
+
 ## Setup
 
 ### 1. Install the navable MCP server
